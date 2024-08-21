@@ -1,0 +1,7 @@
+{
+  "foo": {
+    "format": ["bar", "baz", "foo"],
+    "default": "bar",
+    "env": "FOO"
+  }
+}
