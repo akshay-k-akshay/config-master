@@ -1,7 +1,6 @@
 package configmaster
 
 import (
-	"os"
 	"reflect"
 	"testing"
 )
@@ -48,7 +47,7 @@ func TestWithValueFromEnv(t *testing.T) {
 	}
 	// set Env VAlue
 	want := "bar from env"
-	os.Setenv("FOO_ENV", want)
+	t.Setenv("FOO_ENV", want)
 	config, err := NewConfig(directMap)
 	if err != nil {
 		t.Fatalf(`NewConfig() = %v, want nil`, err)
@@ -87,7 +86,7 @@ func TestWithEnvValueIsInFormat(t *testing.T) {
 		},
 	}
 	// set Env VAlue
-	os.Setenv("FOO_ENV", "bar test")
+	t.Setenv("FOO_ENV", "bar test")
 	config, err := NewConfig(directMap)
 	if err == nil {
 		t.Fatalf(`should throw error if value is not in format %v`, err)
@@ -154,7 +153,7 @@ func TestGetNestedKey(t *testing.T) {
 }
 
 func TestNewConfigWithJsonFile(t *testing.T) {
-	config, err := NewConfig("./config.json")
+	config, err := NewConfig("./sample-config.json")
 	if err != nil {
 		t.Fatalf(`should throw error if value is not in format %v`, err)
 	}
