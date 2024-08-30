@@ -42,16 +42,16 @@ go get -u github.com/akshay-k-akshay/config-master
 A basic example: 
 
 ```go
-package config
+package main
 
 import configmaster "github.com/akshay-k-akshay/config-master"
 
 var config *configmaster.Config
 
-func init() {
+func main() {
 	var err error
   configMap := map[string]interface{}{
-		"foo": map[string]interface{}{
+		"FOO": map[string]interface{}{
 			"bar": map[string]interface{}{
 				"format":  []interface{}{"bar", "baz", "foo"},
 				"default": "baz",
@@ -61,14 +61,12 @@ func init() {
 		},
 	}
 
-	config, err = configmaster.NewConfig()
+	config, err = configmaster.NewConfig(configMap)
 	if err != nil {
 		panic(err)
 	}
-}
 
-func get(key string) interface{} {
-	return config.Get(key)
+	foo := config.Get("FOO")
 }
 
 ```
@@ -76,22 +74,20 @@ func get(key string) interface{} {
 A basic example: with json file
 
 ```go
-package config
+package main
 
 import configmaster "github.com/akshay-k-akshay/config-master"
 
 var config *configmaster.Config
 
-func init() {
+func main() {
 	var err error
 	config, err = configmaster.NewConfig("config.json")
 	if err != nil {
 		panic(err)
 	}
-}
 
-func get(key string) interface{} {
-	return config.Get(key)
+	foo := config.Get("FOO")
 }
 
 ```
@@ -99,7 +95,7 @@ func get(key string) interface{} {
 example json file config.json
 ```json
 {
-  "foo": {
+  "FOO": {
     "format": ["bar", "baz", "foo"],
     "default": "bar",
     "env": "FOO"
