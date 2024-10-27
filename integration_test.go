@@ -164,3 +164,58 @@ func TestNewConfigWithJsonFile(t *testing.T) {
 		t.Fatalf(`config.Get("foo") should be "%v", got "%v"`, want, value)
 	}
 }
+
+func TestNewConfigWithAdvancedJsonFile(t *testing.T) {
+	t.Setenv("FOO", "bar")
+	t.Setenv("QUX_BAR", "BAR-QUX")
+	t.Setenv("XYZ_BAR", "XYZ-BAR")
+
+	config, err := NewConfig("./advanced-config.json")
+	if err != nil {
+		t.Fatalf(`should throw error if value is not in format %v`, err)
+	}
+	value := config.Get("foo")
+
+	want := "bar"
+	if value != want {
+		t.Fatalf(`config.Get("foo") should be "%v", got "%v"`, want, value)
+	}
+
+	want = "FOO"
+	value = config.Get("baz.xyz")
+	if value != want {
+		t.Fatalf(`config.Get("baz.xyz") should be "%v", got "%v"`, want, value)
+	}
+
+	want = "FOO-QUX"
+	value = config.Get("qux.foo")
+	if value != want {
+		t.Fatalf(`config.Get("qux.foo") should be "%v", got "%v"`, want, value)
+	}
+
+	want = "BAR-QUX"
+	value = config.Get("qux.bar")
+	if value != want {
+		t.Fatalf(`config.Get("qux.bar") should be "%v", got "%v"`, want, value)
+	}
+
+	wantStrings := []interface{}{"FOO-QUUX", "FOO-QUUX-BAZ"}
+	value = config.Get("quux")
+	if !reflect.DeepEqual(value, wantStrings) {
+		t.Fatalf(`config.Get("quux") should be "%v", got "%v"`, wantStrings, value)
+	}
+
+	wantStrings = []interface{}{
+		map[string]interface{}{
+			"foo": "FOO-XYZ",
+		},
+		map[string]interface{}{
+			"bar": "XYZ-BAR",
+		},
+	}
+	value = config.Get("xyz")
+	if !reflect.DeepEqual(value, wantStrings) {
+		t.Fatalf(`config.Get("xyz") should be "%v", got "%v"`, wantStrings, value)
+	}
+
+}

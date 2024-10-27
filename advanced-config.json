@@ -1,0 +1,32 @@
+{
+	"foo": {
+		"format": ["bar", "baz", "foo"],
+		"default": "baz",
+		"env": "FOO"
+	},
+	"baz": {
+		"xyz": "FOO"
+	},
+	"qux": {
+		"foo": {
+			"default": "FOO-QUX",
+			"env": "QUX_FOO"
+		},
+    "bar": {
+      "default": "FOO-QUX-BAZ",
+      "env": "QUX_BAR"
+    }
+	},
+	"quux": ["FOO-QUUX", "FOO-QUUX-BAZ"],
+	"xyz": [
+		{
+			"foo": "FOO-XYZ"
+		},
+		{
+			"bar": {
+				"default": "BAR-XYZ",
+				"env": "XYZ_BAR"
+			}
+		}
+	]
+}
