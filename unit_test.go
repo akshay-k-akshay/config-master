@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func TestProcessEnvRecursively(t *testing.T) {
+func TestprocessRecursively(t *testing.T) {
 	tests := []struct {
 		name    string
 		config  map[string]interface{}
@@ -98,13 +98,13 @@ func TestProcessEnvRecursively(t *testing.T) {
 				t.Setenv(k, v)
 			}
 			c := &Config{}
-			got, err := c.processEnvRecursively(tt.config)
+			got, err := c.processRecursively(tt.config)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("processEnvRecursively() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("processRecursively() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("processEnvRecursively() = %v, want %v", got, tt.want)
+				t.Errorf("processRecursively() = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -449,19 +449,19 @@ func TestIsValueInExpectedFormat(t *testing.T) {
 		{
 			name:     "value is a boolean",
 			value:    true,
-			format:   true,
+			format:   "bool",
 			expected: true,
 		},
 		{
 			name:     "value is a float64",
 			value:    3.14,
-			format:   3.14,
+			format:   "float64",
 			expected: true,
 		},
 		{
 			name:     "value is an int",
 			value:    42,
-			format:   42,
+			format:   "int",
 			expected: true,
 		},
 		{
@@ -483,6 +483,57 @@ func TestIsValueInExpectedFormat(t *testing.T) {
 			actual := isValueInExpectedFormat(test.value, test.format)
 			if actual != test.expected {
 				t.Errorf("expected %v, got %v", test.expected, actual)
+			}
+		})
+	}
+}
+
+func TestIsNestedMap(t *testing.T) {
+	tests := []struct {
+		name   string
+		config map[string]interface{}
+		want   bool
+	}{
+		{
+			name: "nested key",
+			config: map[string]interface{}{
+				"foo": map[string]interface{}{"bar": "baz"},
+			},
+			want: true,
+		},
+		{
+			name: "multi nested key",
+			config: map[string]interface{}{
+				"foo": map[string]interface{}{
+					"bar": map[string]interface{}{"baz": "qux"},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "no nested key",
+			config: map[string]interface{}{
+				"foo": "bar",
+			},
+			want: false,
+		},
+		{
+			name:   "empty map",
+			config: map[string]interface{}{},
+			want:   false,
+		},
+		{
+			name:   "nil map",
+			config: nil,
+			want:   false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := isNestedMap(tt.config)
+			if got != tt.want {
+				t.Errorf("isNestedMap(%v) = %v, want %v", tt.config, got, tt.want)
 			}
 		})
 	}

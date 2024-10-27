@@ -46,10 +46,7 @@ package main
 
 import configmaster "github.com/akshay-k-akshay/config-master"
 
-var config *configmaster.Config
-
 func main() {
-	var err error
   configMap := map[string]interface{}{
 		"FOO": map[string]interface{}{
 			"bar": map[string]interface{}{
@@ -61,7 +58,7 @@ func main() {
 		},
 	}
 
-	config, err = configmaster.NewConfig(configMap)
+	config, err := configmaster.NewConfig(configMap)
 	if err != nil {
 		panic(err)
 	}
@@ -78,11 +75,8 @@ package main
 
 import configmaster "github.com/akshay-k-akshay/config-master"
 
-var config *configmaster.Config
-
 func main() {
-	var err error
-	config, err = configmaster.NewConfig("config.json")
+	config, err := configmaster.NewConfig("config.json")
 	if err != nil {
 		panic(err)
 	}

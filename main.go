@@ -57,7 +57,7 @@ func NewConfig(input interface{}) (*Config, error) {
 
 	// Process environment variables recursively
 	var err error
-	cfg.data, err = cfg.processEnvRecursively(cfg.data)
+	cfg.data, err = cfg.processRecursively(cfg.data)
 	if err != nil {
 		return nil, fmt.Errorf("[Config-Master]: %w", err)
 	}
@@ -151,8 +151,11 @@ func validateAndSetValue(config map[string]interface{}) (interface{}, error) {
 		} else {
 			value = getDefaultValue(config)
 		}
-	} else {
+	} else if _, exists := config["default"]; exists {
 		value = getDefaultValue(config)
+	} else {
+		// If the value is not in the expected format, return what we have
+		return config, nil
 	}
 
 	// Check if the value is in the expected format
@@ -165,50 +168,62 @@ func validateAndSetValue(config map[string]interface{}) (interface{}, error) {
 	return value, nil
 }
 
-// isValueInExpectedFormat checks if a value is in the expected format.
-// It verifies if the value matches any of the accepted formats provided in the format parameter.
-// The function returns true if the value is in the expected format, otherwise it returns false.
+// isValueInExpectedFormat checks if a given value is in one of the accepted formats.
+// It returns true if the value matches the expected format, otherwise false.
 func isValueInExpectedFormat(value interface{}, format interface{}) bool {
-	// Get the type of the value
+	// Determine the type of the value
 	valueType := reflect.TypeOf(value)
 
 	// Check if the format is a list of accepted formats
 	if formats, ok := format.([]interface{}); ok {
-		// Check if the value is in the list of accepted formats
+		// Return true if the value is found within the list
 		return contains(formats, value)
 	}
 
-	// Check if the format is a string
-	if _, ok := format.(string); ok {
-		// Check if the value is a string
-		return valueType == reflect.TypeOf("")
+	// Check if the format is specified as a string
+	if formatStr, ok := format.(string); ok {
+		switch formatStr {
+		case "string":
+			// Check if the value is of type string
+			return valueType == reflect.TypeOf("")
+		case "bool":
+			// Check if the value is of type boolean
+			return valueType == reflect.TypeOf(true)
+		case "float64":
+			// Check if the value is of type float64
+			return valueType == reflect.TypeOf(float64(0))
+		case "int":
+			// Check if the value is of type int
+			return valueType == reflect.TypeOf(int(0))
+		default:
+			// Return false if none of the specified formats match
+			return false
+		}
 	}
 
-	// Check if the format is a boolean
-	if _, ok := format.(bool); ok {
-		// Check if the value is a boolean
-		return valueType == reflect.TypeOf(true)
-	}
+	//TODO: need to check it have custom format here
 
-	// Check if the format is a float64
-	if _, ok := format.(float64); ok {
-		// Check if the value is a float64
-		return valueType == reflect.TypeOf(float64(0))
-	}
-
-	// Check if the format is an int
-	if _, ok := format.(int); ok {
-		// Check if the value is an int
-		return valueType == reflect.TypeOf(int(0))
-	}
-
-	// If none of the above conditions are met, return false
+	// Return false if no valid format was provided
 	return false
 }
 
-// processEnvRecursively iterates over the config map and replaces 'env' key values with environment variable values or default
+// isNestedMap checks if a given map contains any nested keys (i.e. keys with a dot in the name).
+// It returns true if any nested key is found, otherwise false.
+func isNestedMap(config map[string]interface{}) bool {
+	// Iterate over all keys in the config map
+	for key := range config {
+		// should check if this map contains another map
+		if _, ok := config[key].(map[string]interface{}); ok {
+			return true
+		}
+	}
+	// Return false if no nested key is found
+	return false
+}
+
+// processRecursively iterates over the config map and replaces 'env' key values with environment variable values or default
 // It returns a new map with the replaced values and an error if any of the values are not in their specified format
-func (c *Config) processEnvRecursively(config map[string]interface{}) (map[string]interface{}, error) {
+func (c *Config) processRecursively(config map[string]interface{}) (map[string]interface{}, error) {
 	// Create a new map to store the processed values
 	processedConfig := make(map[string]interface{})
 
@@ -217,16 +232,16 @@ func (c *Config) processEnvRecursively(config map[string]interface{}) (map[strin
 		// Check if the value is a nested map
 		switch typedValue := value.(type) {
 		case map[string]interface{}:
-			// If the nested map has an 'env' key, replace the value with the environment variable value or default
-			if hasKey(typedValue, "default") || hasKey(typedValue, "env") {
-				processedValue, err := validateAndSetValue(typedValue)
+			// check if map is nested map or not
+			if !isNestedMap(typedValue) {
+				var err error
+				processedConfig[key], err = validateAndSetValue(typedValue)
 				if err != nil {
 					return nil, err
 				}
-				processedConfig[key] = processedValue
 			} else {
 				// If the nested map does not have an 'env' key, recursively process the nested map
-				nestedConfig, err := c.processEnvRecursively(typedValue)
+				nestedConfig, err := c.processRecursively(typedValue)
 				if err != nil {
 					return nil, err
 				}
@@ -240,7 +255,7 @@ func (c *Config) processEnvRecursively(config map[string]interface{}) (map[strin
 				switch nestedItem := item.(type) {
 				case map[string]interface{}:
 					// If an item is a nested map, recursively process the nested map
-					processedItem, err := c.processEnvRecursively(nestedItem)
+					processedItem, err := c.processRecursively(nestedItem)
 					if err != nil {
 						return nil, err
 					}
@@ -257,13 +272,6 @@ func (c *Config) processEnvRecursively(config map[string]interface{}) (map[strin
 		}
 	}
 
+	// fmt.Println(processedConfig)
 	return processedConfig, nil
-}
-
-// hasKey checks if a map has a given key
-//
-// This method takes a map and a key as input and returns true if the key exists in the map, and false otherwise.
-func hasKey(config map[string]interface{}, key string) bool {
-	_, exists := config[key]
-	return exists
 }
