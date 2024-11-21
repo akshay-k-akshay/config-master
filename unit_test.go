@@ -1,12 +1,13 @@
 package configmaster
 
 import (
+	"errors"
 	"os"
 	"reflect"
 	"testing"
 )
 
-func TestprocessRecursively(t *testing.T) {
+func TestProcessRecursively(t *testing.T) {
 	tests := []struct {
 		name    string
 		config  map[string]interface{}
@@ -432,56 +433,89 @@ func TestIsValueInExpectedFormat(t *testing.T) {
 		name     string
 		value    interface{}
 		format   interface{}
-		expected bool
+		expected error
 	}{
 		{
 			name:     "value in list of accepted formats",
 			value:    "foo",
 			format:   []interface{}{"foo", "bar", "baz"},
-			expected: true,
+			expected: nil,
 		},
 		{
 			name:     "value is a string",
 			value:    "hello",
 			format:   "string",
-			expected: true,
+			expected: nil,
 		},
 		{
 			name:     "value is a boolean",
 			value:    true,
 			format:   "bool",
-			expected: true,
+			expected: nil,
 		},
 		{
 			name:     "value is a float64",
 			value:    3.14,
 			format:   "float64",
-			expected: true,
+			expected: nil,
 		},
 		{
 			name:     "value is an int",
 			value:    42,
 			format:   "int",
-			expected: true,
+			expected: nil,
 		},
 		{
 			name:     "value is not in expected format",
 			value:    "hello",
 			format:   42,
-			expected: false,
+			expected: errors.New("invalid format"),
 		},
 		{
 			name:     "format is not a list, string, boolean, float64, or int",
 			value:    "hello",
 			format:   struct{}{},
-			expected: false,
+			expected: errors.New("invalid format"),
+		},
+		{
+			name:     "value is not a string",
+			value:    42,
+			format:   "string",
+			expected: errors.New("value is not a string"),
+		},
+		{
+			name:     "value is not a boolean",
+			value:    "true",
+			format:   "bool",
+			expected: errors.New("value is not a boolean"),
+		},
+		{
+			name:     "value is not a float64",
+			value:    "3.14",
+			format:   "float64",
+			expected: errors.New("value is not a float64"),
+		},
+		{
+			name:     "value is not an int",
+			value:    "42",
+			format:   "int",
+			expected: errors.New("value is not an int"),
+		},
+		{
+			name:     "value is not in expected format",
+			value:    "hello",
+			format:   []interface{}{"foo", "bar", "baz"},
+			expected: errors.New("value is not in the expected format. Expected formats: [foo bar baz]"),
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			actual := isValueInExpectedFormat(test.value, test.format)
-			if actual != test.expected {
+			if actual == nil && test.expected != nil {
+				t.Errorf("expected error, got nil")
+			}
+			if (actual != nil && test.expected != nil) && actual.Error() != test.expected.Error() {
 				t.Errorf("expected %v, got %v", test.expected, actual)
 			}
 		})
